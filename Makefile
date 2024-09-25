@@ -1,6 +1,7 @@
 include .env
 
 generate:
+	@abigen --abi ./internal/contract/TokenHopper.abi --pkg contract --out ./internal/contract/token_hopper.go
 	@go generate ./...
 
 build: generate ## Compile the binary
@@ -36,7 +37,7 @@ codecov-test: generate ## Run tests with coverage
 	@go test ./... -coverprofile=coverage/coverage.out
 	@go tool cover -html=coverage/coverage.out -o coverage/coverage.html
 
-install-deps: install-gofumpt install-mockgen install-staticcheck ## Install dependencies
+install-deps: install-gofumpt install-mockgen install-abigen install-staticcheck ## Install dependencies
 
 install-gofumpt: ## Install gofumpt for formatting
 	go install mvdan.cc/gofumpt@$(GOFUMPT_VERSION)
@@ -46,6 +47,9 @@ install-mockgen: ## Install mockgen for generating mocks
 
 install-staticcheck:
 	go install honnef.co/go/tools/cmd/staticcheck@$(STATICCHECK_VERSION)
+
+install-abigen: ## install abigen
+	go install github.com/ethereum/go-ethereum/cmd/abigen@latest
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

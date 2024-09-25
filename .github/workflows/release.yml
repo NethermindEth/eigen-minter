@@ -55,5 +55,5 @@ jobs:
         with:
           tag: ${{env.VERSION}}
           draft: false
-          prerelease: false
+          prerelease: true 
           generateReleaseNotes: true
