@@ -29,6 +29,12 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
 
+      - name: Install abigen
+        run: make install-abigen
+
+      - name: Generate contract bindings
+        run: make generate
+
       - name: Instal gofumpt
         run: make install-gofumpt
 
@@ -69,13 +75,10 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
       
-      - name: Install mockgen
-        run: make install-mockgen
-
       - name: Install abigen
         run: make install-abigen
 
-      - name: Generate mocks
+      - name: Generate contract bindings
         run: make generate
 
       - name: Check go mod status
