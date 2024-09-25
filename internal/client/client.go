@@ -13,13 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package client 
+package client
 
 import (
 	"context"
 	"fmt"
-	"math/big"
 	"log/slog"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 )

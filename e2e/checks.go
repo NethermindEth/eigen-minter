@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func checkPushgatewayMetrics(t *testing.T, expectedMetrics map[string]ExpectedMetric, port int	) {
+func checkPushgatewayMetrics(t *testing.T, expectedMetrics map[string]ExpectedMetric, port int) {
 	t.Helper()
 	response, err := getRequest(t, fmt.Sprintf("http://localhost:%d/metrics", port), 1*time.Second)
 	require.NoError(t, err, "request to pushgateway should succeed")

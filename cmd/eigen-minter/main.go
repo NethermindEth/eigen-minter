@@ -8,7 +8,6 @@ import (
 )
 
 func main() {
-
 	rootCmd := cli.RootCmd()
 	rootCmd.SilenceUsage = true
 	rootCmd.SilenceErrors = true

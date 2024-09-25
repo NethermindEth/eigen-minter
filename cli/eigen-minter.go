@@ -107,7 +107,7 @@ func run(cmd *cobra.Command, args []string) error {
 
 	cfg, err := validateConfig()
 	if err != nil {
-		return err 
+		return err
 	}
 
 	slog.Debug(fmt.Sprintf("Connecting to RPC: %s", cfg.RPC))
