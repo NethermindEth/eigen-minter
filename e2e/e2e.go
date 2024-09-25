@@ -16,7 +16,6 @@ limitations under the License.
 package e2e
 
 import (
-	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -39,9 +38,7 @@ type e2eTestCase struct {
 	act                  e2eAct
 	assert               e2eAssert
 	pid                  int
-	ctx                  context.Context
 	envVars              []string
-	pushgatewayContainer string
 }
 
 func newe2eTestCase(t *testing.T, arranger e2eArranger, act e2eAct, assert e2eAssert) *e2eTestCase {

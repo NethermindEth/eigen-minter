@@ -12,10 +12,6 @@ import (
 	"github.com/cenkalti/backoff/v4"
 )
 
-func runCommand(t *testing.T, path string, binaryName string, args ...string) error {
-	_, _, err := runCommandOutput(t, path, binaryName, args...)
-	return err
-}
 
 func runCommandCMD(t *testing.T, path string, binaryName string, args ...string) *exec.Cmd {
 	t.Helper()
@@ -28,24 +24,6 @@ func runCommandCMD(t *testing.T, path string, binaryName string, args ...string)
 		t.Fatalf("Failed to start command: %s %s", binaryName, strings.Join(args, " "))
 	}
 	return cmd
-}
-
-func runCommandOutput(t *testing.T, path string, binaryName string, args ...string) ([]byte, *exec.Cmd, error) {
-	t.Helper()
-	t.Logf("Binary path: %s", path)
-	t.Logf("Running command: %s %s", binaryName, strings.Join(args, " "))
-	cmd := exec.Command(path, args...)
-	out, err := cmd.CombinedOutput()
-	t.Logf("===== OUTPUT =====\n%s\n==================", out)
-	return out, cmd, err
-}
-
-func logAndPipeError(t *testing.T, prefix string, err error) error {
-	t.Helper()
-	if err != nil {
-		t.Log(prefix, err)
-	}
-	return err
 }
 
 func checkGoInstalled(t *testing.T) {

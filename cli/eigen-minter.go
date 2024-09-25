@@ -122,24 +122,24 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create contract: %v", err)
 	}
 
-	slog.Info(fmt.Sprintf("Checking if can press"))
+	slog.Info("Checking if can press")
 	canPress, err := c.CanPress(nil)
 	if err != nil {
 		return fmt.Errorf("failed to check if can press: %v", err)
 	}
 
 	if canPress {
-		slog.Info(fmt.Sprintf("Pressing button"))
+		slog.Info("Pressing button")
 		if err := pressButton(cfg, chainIDs[cfg.Network], rpcClient, c); err != nil {
 			return fmt.Errorf("failed to press button: %v", err)
 		} else {
-			slog.Info(fmt.Sprintf("Button pressed successfully"))
+			slog.Info("Button pressed successfully")
 			if m != nil {
 				m.RecordPressButtonSuccess()
 			}
 		}
 	} else {
-		slog.Info(fmt.Sprintf("Cannot press button at this time"))
+		slog.Info("Cannot press button at this time")
 		if m != nil {
 			m.RecordPressButtonFailure()
 		}
@@ -184,7 +184,7 @@ func validateConfig() (Config, error) {
 			slog.Error(fmt.Sprintf("invalid private key: %v", err))
 			// Try now to get the private key from the private-key setting
 		} else {
-			slog.Debug(fmt.Sprintf("private key is valid"))
+			slog.Debug("private key is valid")
 			cfg.PrivateKey = string(pvKeyBytes)
 		}
 	}
