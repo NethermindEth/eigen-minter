@@ -12,7 +12,6 @@ import (
 	"github.com/cenkalti/backoff/v4"
 )
 
-
 func runCommandCMD(t *testing.T, path string, binaryName string, args ...string) *exec.Cmd {
 	t.Helper()
 	t.Logf("Running command: %s %s", binaryName, strings.Join(args, " "))

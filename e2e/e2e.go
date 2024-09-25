@@ -30,15 +30,15 @@ type (
 )
 
 type e2eTestCase struct {
-	t                    *testing.T
-	testDir              string
-	repoPath             string
-	binaryName           string
-	arranger             e2eArranger
-	act                  e2eAct
-	assert               e2eAssert
-	pid                  int
-	envVars              []string
+	t          *testing.T
+	testDir    string
+	repoPath   string
+	binaryName string
+	arranger   e2eArranger
+	act        e2eAct
+	assert     e2eAssert
+	pid        int
+	envVars    []string
 }
 
 func newe2eTestCase(t *testing.T, arranger e2eArranger, act e2eAct, assert e2eAssert) *e2eTestCase {
