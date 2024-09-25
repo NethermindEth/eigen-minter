@@ -36,6 +36,7 @@ jobs:
           nethermindeth/${{env.APP_NAME}}:${{env.VERSION}}
           nethermindeth/${{env.APP_NAME}}:latest
         build-args: |
+          APP_NAME=${{ env.APP_NAME }}
           VERSION=${{ env.VERSION }}
 
     - name: Log out of Docker Hub
