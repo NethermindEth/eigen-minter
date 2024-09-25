@@ -72,6 +72,9 @@ jobs:
       - name: Install mockgen
         run: make install-mockgen
 
+      - name: Install abigen
+        run: make install-abigen
+
       - name: Generate mocks
         run: make generate
 
