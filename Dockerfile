@@ -3,6 +3,7 @@ FROM golang:1.23-alpine AS builder
 
 ARG APP_NAME
 ARG VERSION
+ARG ARCH
 
 # Set the Current Working Directory inside the container
 WORKDIR /app
@@ -15,7 +16,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go app with version argument
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=${VERSION}" -o ./bin/${APP_NAME} ./cmd/${APP_NAME}/main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} go build -ldflags "-X main.Version=${VERSION}" -o ./bin/${APP_NAME} ./cmd/${APP_NAME}/main.go
 
 # Final stage
 #FROM debian:buster-slim

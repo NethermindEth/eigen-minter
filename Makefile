@@ -12,7 +12,7 @@ build-linux: generate ## Compile the binary for linux
 	@env GOOS=linux go build -o bin/$(APP_NAME) cmd/$(APP_NAME)/main.go
 
 build-docker: build-linux ## Build docker image
-	@docker build --build-arg APP_NAME=$(APP_NAME) --build-arg VERSION=$(VERSION) -t $(APP_NAME) .
+	@docker build --build-arg APP_NAME=$(APP_NAME) --build-arg VERSION=$(VERSION) --build-arg ARCH=$(ARCH) -t $(APP_NAME) .
 
 install: build ## compile the binary and copy it to PATH
 	@sudo cp build/sedge /usr/local/bin
