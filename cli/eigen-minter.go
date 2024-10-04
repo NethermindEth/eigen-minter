@@ -104,6 +104,10 @@ func run(cmd *cobra.Command, args []string) error {
 	if pushGatewayURL != "" {
 		m = metrics.NewMetrics(pushGatewayURL)
 		m.RecordTrigger()
+		slog.Debug(fmt.Sprintf("Pushing metrics to %s", pushGatewayURL))
+		if err := m.Push(); err != nil {
+			slog.Error(fmt.Sprintf("Failed to push metrics: %v\n", err))
+		}
 	}
 
 	cfg, err := validateConfig()
@@ -132,7 +136,10 @@ func run(cmd *cobra.Command, args []string) error {
 	if canPress {
 		slog.Info("Pressing button")
 		if err := pressButton(cfg, chainIDs[cfg.Network], rpcClient, c); err != nil {
-			return fmt.Errorf("failed to press button: %v", err)
+			slog.Error(fmt.Sprintf("failed to press button: %v", err))
+			if m != nil {
+				m.RecordPressButtonFailure()
+			}
 		} else {
 			slog.Info("Button pressed successfully")
 			if m != nil {
