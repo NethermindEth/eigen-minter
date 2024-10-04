@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestE2E_ValidArgs_Network(t *testing.T) {
+func TestE2E_ValidArgs_Network_Holesky(t *testing.T) {
 	var cmd *exec.Cmd
 	var containerID string
 	var err error
@@ -43,6 +43,52 @@ func TestE2E_ValidArgs_Network(t *testing.T) {
 		},
 		func(t *testing.T, binaryPath string) *exec.Cmd {
 			cmd = runCommandCMD(t, binaryPath, "eigen-minter", "--network", "holesky", "--pushgateway-url", "http://localhost:9091")
+			time.Sleep(3 * time.Second)
+			return cmd
+		},
+		func(t *testing.T) {
+			defer stopPushgatewayContainer(t, containerID)
+			checkPushgatewayMetrics(t, expectedMetrics, 9091)
+
+			cmd.Process.Signal(os.Interrupt)
+
+			done := make(chan error, 1)
+			go func() {
+				done <- cmd.Wait()
+			}()
+
+			select {
+			case err := <-done:
+				assert.NoError(t, err)
+			case <-time.After(5 * time.Second):
+				t.Error("Process did not exit within the timeout period")
+				cmd.Process.Kill()
+			}
+		},
+	)
+
+	e2eTest.run()
+}
+
+func TestE2E_ValidArgs_Network_Mainnet(t *testing.T) {
+	var cmd *exec.Cmd
+	var containerID string
+	var err error
+
+	e2eTest := newe2eTestCase(
+		t,
+		func(t *testing.T, binaryPath string) (map[string]string, error) {
+			containerID, err = startPushgatewayContainer(t, 9091)
+			if err != nil {
+				stopPushgatewayContainer(t, containerID)
+			}
+			return map[string]string{
+				"EIGEN_MINTER_LOG_LEVEL":   "debug",
+				"EIGEN_MINTER_PRIVATE_KEY": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			}, err
+		},
+		func(t *testing.T, binaryPath string) *exec.Cmd {
+			cmd = runCommandCMD(t, binaryPath, "eigen-minter", "--network", "mainnet", "--pushgateway-url", "http://localhost:9091")
 			time.Sleep(3 * time.Second)
 			return cmd
 		},
