@@ -33,6 +33,7 @@ type Config struct {
 
 var contractAddresses = map[string]string{
 	"holesky": "0x8DaaE33cB2da8dA23595ADB19f271EF41E34bd8C",
+	"mainnet": "0x0ffC6AC10515EE0F83fEE71FCaf5Ea5805256563",
 }
 
 var chainIDs = map[string]uint64{
