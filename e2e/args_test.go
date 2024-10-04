@@ -32,7 +32,7 @@ func TestE2E_ValidArgs_Network_Holesky(t *testing.T) {
 	e2eTest := newe2eTestCase(
 		t,
 		func(t *testing.T, binaryPath string) (map[string]string, error) {
-			containerID, err = startPushgatewayContainer(t, 9091)
+			containerID, err = startPushgatewayContainer(t, 9089)
 			if err != nil {
 				stopPushgatewayContainer(t, containerID)
 			}
@@ -42,13 +42,13 @@ func TestE2E_ValidArgs_Network_Holesky(t *testing.T) {
 			}, err
 		},
 		func(t *testing.T, binaryPath string) *exec.Cmd {
-			cmd = runCommandCMD(t, binaryPath, "eigen-minter", "--network", "holesky", "--pushgateway-url", "http://localhost:9091")
-			time.Sleep(3 * time.Second)
+			cmd = runCommandCMD(t, binaryPath, "eigen-minter", "--network", "holesky", "--pushgateway-url", "http://localhost:9089")
+			time.Sleep(5 * time.Second)
 			return cmd
 		},
 		func(t *testing.T) {
 			defer stopPushgatewayContainer(t, containerID)
-			checkPushgatewayMetrics(t, expectedMetrics, 9091)
+			checkPushgatewayMetrics(t, expectedMetrics, 9089)
 
 			cmd.Process.Signal(os.Interrupt)
 
@@ -89,7 +89,7 @@ func TestE2E_ValidArgs_Network_Mainnet(t *testing.T) {
 		},
 		func(t *testing.T, binaryPath string) *exec.Cmd {
 			cmd = runCommandCMD(t, binaryPath, "eigen-minter", "--network", "mainnet", "--pushgateway-url", "http://localhost:9091")
-			time.Sleep(3 * time.Second)
+			time.Sleep(10 * time.Second) // Execution on mainnet takes more time
 			return cmd
 		},
 		func(t *testing.T) {
@@ -136,7 +136,7 @@ func TestE2E_ValidArgs_CustomRPC(t *testing.T) {
 		},
 		func(t *testing.T, binaryPath string) *exec.Cmd {
 			cmd = runCommandCMD(t, binaryPath, "eigen-minter", "--network", "holesky", "--rpc-endpoint", "https://1rpc.io/holesky")
-			time.Sleep(3 * time.Second)
+			time.Sleep(5 * time.Second)
 			return cmd
 		},
 		func(t *testing.T) {
@@ -187,7 +187,7 @@ func TestE2E_ValidEnv_All(t *testing.T) {
 		},
 		func(t *testing.T, binaryPath string) *exec.Cmd {
 			cmd = runCommandCMD(t, binaryPath, "eigen-minter")
-			time.Sleep(3 * time.Second)
+			time.Sleep(5 * time.Second)
 			return cmd
 		},
 		func(t *testing.T) {
