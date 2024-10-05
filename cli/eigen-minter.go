@@ -12,6 +12,8 @@ import (
 	"github.com/NethermindEth/eigen-minter/internal/client"
 	"github.com/NethermindEth/eigen-minter/internal/contract"
 	"github.com/NethermindEth/eigen-minter/internal/metrics"
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -260,11 +262,22 @@ func pressButton(cfg Config, chainID uint64, rpcClient *ethclient.Client, c *con
 	// Set up transaction options
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = big.NewInt(0) // in wei
-	auth.GasLimit = 0          // in units
-	auth.GasPrice, err = rpcClient.SuggestGasPrice(context.Background())
+
+	// Estimate gas limit
+	gasLimit, err := estimateGas(auth, rpcClient, common.HexToAddress(cfg.Contract))
+	if err != nil {
+		return fmt.Errorf("failed to estimate gas: %v", err)
+	}
+	// Add a buffer to the estimated gas limit
+	auth.GasLimit = uint64(float64(gasLimit) * 1.2) // 20% buffer
+
+	// Get suggested gas price and add a small buffer
+	suggestedGasPrice, err := rpcClient.SuggestGasPrice(context.Background())
 	if err != nil {
 		return fmt.Errorf("failed to suggest gas price: %v", err)
 	}
+	auth.GasPrice = new(big.Int).Mul(suggestedGasPrice, big.NewInt(105))
+	auth.GasPrice = auth.GasPrice.Div(auth.GasPrice, big.NewInt(100)) // 5% higher than suggested
 
 	tx, err := c.PressButton(auth)
 	if err != nil {
@@ -281,4 +294,35 @@ func pressButton(cfg Config, chainID uint64, rpcClient *ethclient.Client, c *con
 
 	slog.Info(fmt.Sprintf("Transaction mined in block %d", receipt.BlockNumber.Uint64()))
 	return nil
+}
+
+func estimateGas(auth *bind.TransactOpts, rpcClient *ethclient.Client, contractAddress common.Address) (uint64, error) {
+	// Parse contract ABI
+	contractABI, err := abi.JSON(strings.NewReader(contract.ContractMetaData.ABI))
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse contract ABI: %v", err)
+	}
+
+	// Create a new transaction object
+	data, err := contractABI.Pack("pressButton")
+	if err != nil {
+		return 0, fmt.Errorf("failed to pack data: %v", err)
+	}
+
+	// Estimate gas
+	msg := ethereum.CallMsg{
+		From:     auth.From,
+		To:       &contractAddress,
+		Gas:      0,
+		GasPrice: auth.GasPrice,
+		Value:    auth.Value,
+		Data:     data,
+	}
+
+	gasLimit, err := rpcClient.EstimateGas(context.Background(), msg)
+	if err != nil {
+		return 0, fmt.Errorf("failed to estimate gas: %v", err)
+	}
+
+	return gasLimit, nil
 }
