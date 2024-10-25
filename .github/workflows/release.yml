@@ -58,6 +58,7 @@ jobs:
       - name: Install commitizen
         run: pip install commitizen
 
+      # For the first time, you have to run cz bump manually
       - name: Bump version
         id: bump_version
         run: |
@@ -99,7 +100,7 @@ jobs:
 
       - name: Login to registry
         run: |
-          docker login ${{ env.DOCKER_REGISTRY }} -u ${{ secrets.ARTIFACTORY_ANGKOR_USERNAME }} -p ${{ secrets.ARTIFACTORY_ANGKOR_TOKEN_CONTRIBUTOR }}
+          docker login ${{ env.DOCKER_REGISTRY }} -u ${{ secrets.ARTIFACTORY_ANGKOR_USERNAME }} -p ${{ secrets.ARTIFACTORY_ANGKOR_TOKEN_DEVELOPER }}
 
       - name: Build and Push
         uses: docker/build-push-action@v6
