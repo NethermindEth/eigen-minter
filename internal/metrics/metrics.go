@@ -3,7 +3,6 @@ package metrics
 import (
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"regexp"
 	"strconv"
