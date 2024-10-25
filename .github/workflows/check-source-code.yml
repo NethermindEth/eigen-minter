@@ -24,6 +24,19 @@ jobs:
         run: |
           make install-pre-commit
           make pre-commit
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install commitizen
+        run: pip install commitizen
+
+      - name: Check the branch commits
+        run: |
+          cz check --rev-range origin/HEAD..HEAD
+
   code-format:
     name: Code format
     strategy:
