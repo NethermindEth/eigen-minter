@@ -7,8 +7,25 @@ on:
     branches: [main, develop]
 
 jobs:
+  run-pre-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pre-commit binaries
+        run: |
+          pip install pre-commit
+
+      - name: Run pre-commit
+        run: |
+          make install-pre-commit
+          make pre-commit
   code-format:
-    name: Code format 
+    name: Code format
     strategy:
       matrix:
         go: ["1.23"]
@@ -46,10 +63,10 @@ jobs:
             exit 1
           fi
         shell: bash
-      
+
       - name: Install staticcheck
         run: make install-staticcheck
-      
+
       - name: Run staticcheck
         run: make staticcheck
   build:
@@ -74,7 +91,7 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
-      
+
       - name: Install abigen
         run: make install-abigen
 
@@ -118,7 +135,7 @@ jobs:
         run: make install-deps
 
       - name: Run tests
-        if: matrix.codecov == false 
+        if: matrix.codecov == false
         run: make test
 
       - name: Run codecov tests

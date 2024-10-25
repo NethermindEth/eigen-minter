@@ -4,7 +4,7 @@
 
 The Nethermind Community was created to foster an open, innovative and inclusive community around open source development.
 To clarify expected behaviour in our communities we have adopted the Contributor Covenant. This code of conduct
-has been adopted by many other open source communities and we feel it expresses our values well. 
+has been adopted by many other open source communities and we feel it expresses our values well.
 
 ## Our Pledge
 

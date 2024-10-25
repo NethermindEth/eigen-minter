@@ -17,7 +17,7 @@ the ones that don't apply. Please also remove this line._
 - Code style update (formatting, renaming)
 - Refactoring (no functional changes, no api changes)
 - Build related changes
-- Other (please describe): 
+- Other (please describe):
 
 ## Testing
 
