@@ -2,14 +2,13 @@ package cli
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"fmt"
 	"log/slog"
 	"math/big"
-	"os"
 	"strings"
 
 	"github.com/NethermindEth/eigen-minter/internal/client"
+	"github.com/NethermindEth/eigen-minter/internal/config"
 	"github.com/NethermindEth/eigen-minter/internal/contract"
 	"github.com/NethermindEth/eigen-minter/internal/metrics"
 	"github.com/ethereum/go-ethereum"
@@ -23,30 +22,6 @@ import (
 )
 
 var logLevel string
-
-type Config struct {
-	Network     string
-	RPC         string
-	Contract    string
-	PushGateway string
-	PrivateKey  string
-	FromAddress string
-}
-
-var contractAddresses = map[string]string{
-	"holesky": "0x8DaaE33cB2da8dA23595ADB19f271EF41E34bd8C",
-	"mainnet": "0x0ffC6AC10515EE0F83fEE71FCaf5Ea5805256563",
-}
-
-var chainIDs = map[string]uint64{
-	"mainnet": 1,
-	"holesky": 17000,
-}
-
-var networkRPCs = map[string]string{
-	"mainnet": "https://eth.llamarpc.com",
-	"holesky": "https://ethereum-holesky-rpc.publicnode.com",
-}
 
 func RootCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -102,23 +77,43 @@ func RootCmd() *cobra.Command {
 
 func run(cmd *cobra.Command, args []string) error {
 	var m *metrics.Metrics
+	var err error
+
 	pushGatewayURL := viper.GetString("pushgateway-url")
 	if pushGatewayURL != "" {
-		m = metrics.NewMetrics(pushGatewayURL)
+		var err error
+		m, err = metrics.NewMetrics(pushGatewayURL)
+		if err != nil {
+			return fmt.Errorf("failed to create PushGateway metrics client: %v", err)
+		}
 		m.RecordTrigger()
-		slog.Debug(fmt.Sprintf("Pushing metrics to %s", pushGatewayURL))
+	}
+
+	if err = pressButton(m); err != nil {
+		slog.Error(fmt.Sprintf("failed to press button: %v", err))
+	}
+
+	if m != nil {
 		if err := m.Push(); err != nil {
 			slog.Error(fmt.Sprintf("Failed to push metrics: %v\n", err))
 		}
 	}
 
-	cfg, err := validateConfig()
+	return err
+}
+
+func pressButton(m *metrics.Metrics) error {
+	cfg, err := config.ValidateConfig()
 	if err != nil {
 		return err
 	}
 
 	slog.Debug(fmt.Sprintf("Connecting to RPC: %s", cfg.RPC))
-	rpcClient, err := client.ConnectClient(chainIDs[cfg.Network], cfg.RPC)
+	chainID, err := config.ChainID(cfg.Network)
+	if err != nil {
+		return fmt.Errorf("failed to get chain ID: %v", err)
+	}
+	rpcClient, err := client.ConnectClient(chainID, cfg.RPC)
 	if err != nil {
 		return fmt.Errorf("failed to connect to RPC: %v", err)
 	}
@@ -137,7 +132,7 @@ func run(cmd *cobra.Command, args []string) error {
 
 	if canPress {
 		slog.Info("Pressing button")
-		if err := pressButton(cfg, chainIDs[cfg.Network], rpcClient, c); err != nil {
+		if err := callPressButton(cfg, chainID, rpcClient, c); err != nil {
 			slog.Error(fmt.Sprintf("failed to press button: %v", err))
 			if m != nil {
 				m.RecordPressButtonFailure()
@@ -155,93 +150,10 @@ func run(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if m != nil {
-		if err := m.Push(); err != nil {
-			slog.Error(fmt.Sprintf("Failed to push metrics: %v\n", err))
-		}
-	}
-
 	return nil
 }
 
-func validateConfig() (Config, error) {
-	cfg := Config{}
-
-	cfg.Network = viper.GetString("network")
-	if _, ok := contractAddresses[cfg.Network]; !ok {
-		return cfg, fmt.Errorf("network %s is not supported", cfg.Network)
-	}
-
-	cfg.RPC = viper.GetString("rpc-endpoint")
-	if cfg.RPC == "" {
-		slog.Info(fmt.Sprintf("rpc-endpoint is not set, using default for %s: %s", cfg.Network, networkRPCs[cfg.Network]))
-		cfg.RPC = networkRPCs[cfg.Network]
-	}
-
-	cfg.Contract = viper.GetString("contract-address")
-	if cfg.Contract == "" {
-		slog.Info(fmt.Sprintf("contract-address is not set, using default for %s: %s", cfg.Network, contractAddresses[cfg.Network]))
-		cfg.Contract = contractAddresses[cfg.Network]
-	}
-
-	pvKeyPath := viper.GetString("private-key-file")
-	if pvKeyPath != "" {
-		pvKeyBytes, err := os.ReadFile(pvKeyPath)
-		if err != nil {
-			slog.Error(fmt.Sprintf("failed to read private key file: %v", err))
-		}
-		if err := validatePrivateKey(string(pvKeyBytes)); err != nil {
-			slog.Error(fmt.Sprintf("invalid private key: %v", err))
-			// Try now to get the private key from the private-key setting
-		} else {
-			slog.Debug("private key is valid")
-			cfg.PrivateKey = string(pvKeyBytes)
-		}
-	}
-	if cfg.PrivateKey == "" {
-		cfg.PrivateKey = viper.GetString("private-key")
-		if err := validatePrivateKey(cfg.PrivateKey); err != nil {
-			return cfg, fmt.Errorf("invalid private key: %v", err)
-		}
-	}
-
-	cfg.FromAddress = viper.GetString("from-address")
-	if cfg.FromAddress == "" {
-		pvKey, err := crypto.HexToECDSA(cfg.PrivateKey)
-		if err != nil {
-			return cfg, fmt.Errorf("failed to convert private key to ECDSA: %v", err)
-		}
-		publicKeyECDSA, ok := pvKey.Public().(*ecdsa.PublicKey)
-		if !ok {
-			return cfg, fmt.Errorf("failed to get public key")
-		}
-		address := crypto.PubkeyToAddress(*publicKeyECDSA)
-		slog.Info(fmt.Sprintf("from-address is not set, using default for %s: %s", cfg.Network, address.Hex()))
-		cfg.FromAddress = address.Hex()
-	}
-
-	return cfg, nil
-}
-
-func validatePrivateKey(privateKey string) error {
-	// Remove "0x" prefix if present
-	privateKey = strings.TrimPrefix(privateKey, "0x")
-
-	// Check if the private key has the correct length
-	if len(privateKey) != 64 {
-		return fmt.Errorf("invalid private key length: expected 64 characters, got %d", len(privateKey))
-	}
-
-	// Try to parse the private key
-	_, err := crypto.HexToECDSA(privateKey)
-	if err != nil {
-		return fmt.Errorf("invalid private key: %v", err)
-	}
-
-	return nil
-}
-
-func pressButton(cfg Config, chainID uint64, rpcClient *ethclient.Client, c *contract.Contract) error {
+func callPressButton(cfg config.Config, chainID uint64, rpcClient *ethclient.Client, c *contract.Contract) error {
 	// Create a new transactor
 	pvKey, err := crypto.HexToECDSA(cfg.PrivateKey)
 	if err != nil {
@@ -262,22 +174,21 @@ func pressButton(cfg Config, chainID uint64, rpcClient *ethclient.Client, c *con
 	// Set up transaction options
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = big.NewInt(0) // in wei
+	auth.GasPrice, err = rpcClient.SuggestGasPrice(context.Background())
+	if err != nil {
+		return fmt.Errorf("failed to suggest gas price: %v", err)
+	}
 
 	// Estimate gas limit
 	gasLimit, err := estimateGas(auth, rpcClient, common.HexToAddress(cfg.Contract))
 	if err != nil {
-		return fmt.Errorf("failed to estimate gas: %v", err)
+		slog.Error(fmt.Sprintf("failed to estimate gas: %v", err))
+		auth.GasLimit = 0
 	}
 	// Add a buffer to the estimated gas limit
-	auth.GasLimit = uint64(float64(gasLimit) * 1.2) // 20% buffer
+	auth.GasLimit = uint64(float64(gasLimit) * 1.5) // 50% buffer
 
-	// Get suggested gas price and add a small buffer
-	suggestedGasPrice, err := rpcClient.SuggestGasPrice(context.Background())
-	if err != nil {
-		return fmt.Errorf("failed to suggest gas price: %v", err)
-	}
-	auth.GasPrice = new(big.Int).Mul(suggestedGasPrice, big.NewInt(105))
-	auth.GasPrice = auth.GasPrice.Div(auth.GasPrice, big.NewInt(100)) // 5% higher than suggested
+	slog.Info(fmt.Sprintf("Estimated gas: %d", auth.GasLimit))
 
 	tx, err := c.PressButton(auth)
 	if err != nil {
@@ -315,7 +226,7 @@ func estimateGas(auth *bind.TransactOpts, rpcClient *ethclient.Client, contractA
 		To:       &contractAddress,
 		Gas:      0,
 		GasPrice: auth.GasPrice,
-		Value:    auth.Value,
+		Value:    big.NewInt(0),
 		Data:     data,
 	}
 
