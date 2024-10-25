@@ -13,10 +13,10 @@ on:
       - main
   workflow_dispatch:
     inputs:
-      version:
+      target_environment:
         type: choice
         description: 'Environment to release to'
-        required: true
+        required: false 
         default: 'prod'
         options:
           - dev
@@ -78,9 +78,9 @@ jobs:
     steps:
       - name: Set REPO environment variable
         run: |
-          if [[ "${{ github.event.inputs.version }}" == "dev" ]]; then
+          if [[ "${{ github.event.inputs.target_environment }}" == "dev" ]]; then
             echo "REPO=${{ env.REPO_DEV }}" >> $GITHUB_ENV
-          elif [[ "${{ github.event.inputs.version }}" == "staging" ]]; then
+          elif [[ "${{ github.event.inputs.target_environment }}" == "staging" ]]; then
             echo "REPO=${{ env.REPO_STAGING }}" >> $GITHUB_ENV
           else
             echo "REPO=${{ env.REPO_PROD }}" >> $GITHUB_ENV
