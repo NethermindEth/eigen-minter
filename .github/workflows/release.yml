@@ -13,10 +13,10 @@ on:
       - main
   workflow_dispatch:
     inputs:
-      target_environment:
+      version:
         type: choice
         description: 'Environment to release to'
-        required: false 
+        required: false
         default: 'prod'
         options:
           - dev
@@ -78,9 +78,9 @@ jobs:
     steps:
       - name: Set REPO environment variable
         run: |
-          if [[ "${{ github.event.inputs.target_environment }}" == "dev" ]]; then
+          if [[ "${{ github.event.inputs.version }}" == "dev" ]]; then
             echo "REPO=${{ env.REPO_DEV }}" >> $GITHUB_ENV
-          elif [[ "${{ github.event.inputs.target_environment }}" == "staging" ]]; then
+          elif [[ "${{ github.event.inputs.version }}" == "staging" ]]; then
             echo "REPO=${{ env.REPO_STAGING }}" >> $GITHUB_ENV
           else
             echo "REPO=${{ env.REPO_PROD }}" >> $GITHUB_ENV
@@ -110,27 +110,32 @@ jobs:
           file: Dockerfile
           tags: |
             ${{ env.DOCKER_REGISTRY }}/${{ env.REPO }}/${{ env.APP_NAME }}:${{ env.VERSION }}
-            ${{ env.DOCKER_REGISTRY }}/${{ env.REPO }}/${{ env.APP_NAME }}:latest 
+            ${{ env.DOCKER_REGISTRY }}/${{ env.REPO }}/${{ env.APP_NAME }}:latest
           build-args: |
             APP_NAME=${{ env.APP_NAME }}
             VERSION=${{ env.VERSION }}
 
-  create-release:
-    name: Create GitHub Release
+  release:
     runs-on: ubuntu-latest
-    needs: build_docker_image
-    env:
-      VERSION: ${{ needs.define_tag.outputs.tag }} 
+    name: "Bump version and create changelog with commitizen"
     steps:
-      - name: Checkout code
+      - name: Check out
         uses: actions/checkout@v4
         with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
           fetch-depth: 0
-
-      - name: Create Release
-        uses: ncipollo/release-action@v1
+      - name: Create bump and changelog
+        uses: commitizen-tools/commitizen-action@master
         with:
-          tag: ${{env.VERSION}}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          changelog_increment_filename: CHANGELOG.md
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: "CHANGELOG.md"
+          tag_name: ${{ env.REVISION }}
           draft: false
-          prerelease: true 
-          generateReleaseNotes: true
+          prerelease: true
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
