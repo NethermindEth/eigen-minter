@@ -61,7 +61,7 @@ jobs:
       - name: Bump version
         id: bump_version
         run: |
-          new_version=$(cz bump --dry-run | grep -oP '(?<=tag: v).*')
+          new_version=$(cz bump --dry-run --yes | grep -oP '(?<=tag: v).*')
           echo "new_version=${new_version}" >> $GITHUB_OUTPUT
 
       - name: Print new version
