@@ -15,7 +15,7 @@ build-docker: build-linux ## Build docker image
 	@docker build --build-arg APP_NAME=$(APP_NAME) --build-arg VERSION=$(VERSION) --build-arg ARCH=$(ARCH) -t $(APP_NAME) .
 
 install: build ## compile the binary and copy it to PATH
-	@sudo cp build/sedge /usr/local/bin
+	@sudo cp build/$(APP_NAME) /usr/local/bin
 
 run: build ## Compile and run the binary
 	@./bin/$(APP_NAME)
