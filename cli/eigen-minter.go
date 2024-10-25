@@ -94,6 +94,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	if m != nil {
+		slog.Debug("Pushing metrics ...")
 		if err := m.Push(); err != nil {
 			slog.Error(fmt.Sprintf("Failed to push metrics: %v\n", err))
 		}

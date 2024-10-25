@@ -3,6 +3,7 @@ package metrics
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -60,15 +61,15 @@ func (m *Metrics) Init() error {
 		counter prometheus.Counter
 	}{
 		{
-			regex:   regexp.MustCompile(`eigen_minter_press_button_total{.*\bstatus="failed"} (\d+)`),
-			counter: m.pressButtonCounter.WithLabelValues("failed"),
+			regex:   regexp.MustCompile(`eigen_minter_press_button_total{.*\bstatus="failure"} (\d+)`),
+			counter: m.pressButtonCounter.WithLabelValues("failure"),
 		},
 		{
 			regex:   regexp.MustCompile(`eigen_minter_press_button_total{.*\bstatus="success"} (\d+)`),
 			counter: m.pressButtonCounter.WithLabelValues("success"),
 		},
 		{
-			regex:   regexp.MustCompile(`eigen_minter_trigger_total (\d+)`),
+			regex:   regexp.MustCompile(`eigen_minter_trigger_total{.*} (\d+)`),
 			counter: m.triggerCounter,
 		},
 	}
