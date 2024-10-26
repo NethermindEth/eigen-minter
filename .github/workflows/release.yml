@@ -130,6 +130,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     name: "Bump version and create changelog with commitizen"
+    needs: define_tag
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -141,6 +142,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           changelog_increment_filename: CHANGELOG.md
+          check_consistency: false
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
