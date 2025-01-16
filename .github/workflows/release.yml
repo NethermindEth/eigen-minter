@@ -137,12 +137,6 @@ jobs:
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
           fetch-depth: 0
-      - name: Configure commitizen
-        run: |
-          echo '[tool.commitizen]
-          tag_format = "v$major.$minor.$patch"
-          version_scheme = "semver"
-          ' > pyproject.toml
       - name: Create bump and changelog
         uses: commitizen-tools/commitizen-action@master
         with:
