@@ -35,7 +35,7 @@ jobs:
 
       - name: Check the branch commits
         run: |
-          cz check --rev-range origin/HEAD..HEAD
+          cz check --rev-range origin/main..HEAD
 
   code-format:
     name: Code format
