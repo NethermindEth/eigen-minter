@@ -56,7 +56,7 @@ jobs:
           python-version: '3.x'
 
       - name: Install commitizen
-        run: pip install commitizen
+        run: pip install --upgrade commitizen
 
       # For the first time, you have to run cz bump manually
       - name: Bump version
@@ -138,6 +138,10 @@ jobs:
           token: "${{ secrets.GITHUB_TOKEN }}"
           fetch-depth: 0
           fetch-tags: true
+      - name: List Git tags
+        run: git tag
+      - name: Debug Commitizen
+        run: cz bump --dry-run --changelog --changelog-to-stdout
       - name: Create bump and changelog
         uses: commitizen-tools/commitizen-action@master
         with:
