@@ -137,6 +137,7 @@ jobs:
         with:
           token: "${{ secrets.GITHUB_TOKEN }}"
           fetch-depth: 0
+          fetch-tags: true
       - name: Create bump and changelog
         uses: commitizen-tools/commitizen-action@master
         with:
