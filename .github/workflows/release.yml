@@ -147,7 +147,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body_path: "CHANGELOG.md"
-          tag_name: ${{ env.REVISION }}
+          tag_name: v${{ env.REVISION }}
           draft: false
           prerelease: true
           generate_release_notes: true
