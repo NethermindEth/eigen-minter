@@ -1,3 +1,11 @@
+## v1.0.4 (2025-01-21)
+
+### Fix
+
+- push commits
+- signing
+- go.mod
+
 ## v1.0.3 (2025-01-21)
 
 ### Fix
