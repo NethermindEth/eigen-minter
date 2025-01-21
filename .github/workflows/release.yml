@@ -151,18 +151,14 @@ jobs:
           git_push_gpgsign: true
           trust_level: 5
 
-      - name: Configure Git for GPG
-        run: |
-          git config --global user.signingkey 321A7D4C2501A665
-          git config --global commit.gpgsign true
-
       - name: Create bump and changelog
         uses: commitizen-tools/commitizen-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           check_consistency: false
-          gpg_sign: true
-          
+          git_name: "github-actions[bot]"
+          git_email: "github-actions[bot]@users.noreply.github.com"
+
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
