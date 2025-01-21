@@ -175,26 +175,19 @@ jobs:
           echo "Bump version..."
           cz --no-raise 21 bump --yes --changelog
 
-           # Get the new version from commitizen
+          # Get the new version from commitizen
           new_version="$(cz version --project)"
       
-          # Get the current branch name
           current_branch="$(git branch --show-current)"
-      
-          # Remote repository URL with authentication
           remote_repo="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
       
-          # Pull the latest changes from the remote
+          echo "Pull and push..."
           git pull "$remote_repo" "$current_branch"
-      
-          # Create the new tag with a message
-          git tag -a "v${new_version}" -m "Release version ${new_version}"
-      
-          # Push changes and the new tag to the remote repository
           git push "$remote_repo" "HEAD:${current_branch}" --tags
       
           # Output version number for next steps
           echo "version=${new_version}" >> $GITHUB_OUTPUT
+
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
