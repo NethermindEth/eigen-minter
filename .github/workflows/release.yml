@@ -138,11 +138,22 @@ jobs:
           token: "${{ secrets.GITHUB_TOKEN }}"
           fetch-depth: 0
           fetch-tags: true
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+          git_tag_gpgsign: true
+          git_push_gpgsign: true
+          trust_level: 5
       - name: Create bump and changelog
         uses: commitizen-tools/commitizen-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           check_consistency: false
+          gpg_sign: true
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
