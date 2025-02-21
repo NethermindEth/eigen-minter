@@ -130,7 +130,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     name: "Bump version and create changelog with commitizen"
-    needs: define_tag
+    needs: build_docker_image
     steps:
       - name: Check out
         uses: actions/checkout@v4
