@@ -137,7 +137,7 @@ jobs:
       - name: Check out
         uses: actions/checkout@v4
         with:
-          token: "${{ secrets.GITHUB_TOKEN }}"
+          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
           fetch-tags: true
 
@@ -159,22 +159,16 @@ jobs:
       - name: Install commitizen
         run: pip install --upgrade commitizen
 
+      - name: Configure Git for GitHub verification
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Bump Version and Create Changelog
         id: cz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Configure Git..."
-          git config --local user.name "github-actions[bot]"
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local pull.rebase true
-          git config --local commit.gpgsign true
-          git config --local push.gpgsign false
-          git config --local tag.gpgsign false
-
-          export GPG_TTY=$(tty)
-          export GIT_EDITOR=true
-
           echo "Bump version..."
           cz --no-raise 21 bump --yes --changelog
 
