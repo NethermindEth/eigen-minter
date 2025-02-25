@@ -159,18 +159,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+
+          git pull origin ${GITHUB_REF#refs/heads/} --ff-only
+
           echo "Bump version..."
           cz --no-raise 21 bump --yes --changelog
 
           # Get the new version from commitizen
           new_version="$(cz version --project)"
 
-          current_branch="$(git branch --show-current)"
-          remote_repo="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-
-          echo "Pull and push..."
-          git pull "$remote_repo" "$current_branch"
-          git push "$remote_repo" "HEAD:${current_branch}" --tags
+          echo "Push..."
+          git push origin HEAD:${GITHUB_REF#refs/heads/} --tags
 
           # Output version number for next steps
           echo "version=${new_version}" >> $GITHUB_OUTPUT
