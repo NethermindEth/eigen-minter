@@ -131,6 +131,8 @@ jobs:
     runs-on: ubuntu-latest
     name: "Bump version and create changelog with commitizen"
     needs: build_docker_image
+    permissions:
+      contents: write
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -159,6 +161,8 @@ jobs:
 
       - name: Bump Version and Create Changelog
         id: cz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Configure Git..."
           git config --local user.name "github-actions[bot]"
@@ -182,6 +186,7 @@ jobs:
 
           echo "Pull and push..."
           git pull "$remote_repo" "$current_branch"
+          git commit --amend --no-edit -S
           git push "$remote_repo" "HEAD:${current_branch}" --tags
 
           # Output version number for next steps
