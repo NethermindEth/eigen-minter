@@ -186,7 +186,6 @@ jobs:
 
           echo "Pull and push..."
           git pull "$remote_repo" "$current_branch"
-          git commit --amend --no-edit -S
           git push "$remote_repo" "HEAD:${current_branch}" --tags
 
           # Output version number for next steps
