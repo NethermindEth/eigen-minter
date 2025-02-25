@@ -1,3 +1,9 @@
+## v1.0.10 (2025-02-25)
+
+### Fix
+
+- Simplify release workflow git push and pull logic
+
 ## v1.0.9 (2025-02-25)
 
 ### Fix
