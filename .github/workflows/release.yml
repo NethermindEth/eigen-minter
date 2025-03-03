@@ -9,8 +9,8 @@ env:
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v.*.*.*'
   workflow_dispatch:
     inputs:
       version:
@@ -28,53 +28,11 @@ permissions:
   id-token: write
 
 jobs:
-  define_tag:
-    name: Define new Tag
-    runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.bump_version.outputs.new_version }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Get latest tag
-        id: get_latest_tag
-        run: |
-          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
-          echo "latest_tag=${latest_tag}" >> $GITHUB_OUTPUT
-
-      - name: Validate semver
-        run: |
-          if ! [[ ${{ steps.get_latest_tag.outputs.latest_tag }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Latest tag does not follow semver standard"
-            exit 1
-          fi
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
-
-      - name: Install commitizen
-        run: pip install commitizen
-
-      # For the first time, you have to run cz bump manually
-      - name: Bump version
-        id: bump_version
-        run: |
-          new_version=$(cz bump --dry-run --yes | grep 'tag to create:' | awk '{print $4}')
-          echo "new_version=${new_version}" >> $GITHUB_OUTPUT
-
-      - name: Print new version
-        run: |
-          echo "New version: ${{ steps.bump_version.outputs.new_version }}"
-
   build_docker_image:
     name: Build and push Docker Image
     runs-on: ubuntu-latest
-    needs: define_tag
     env:
-      VERSION: ${{ needs.define_tag.outputs.tag }}
+      VERSION: ${{ github.ref_name }}
       APP_NAME: ${{ github.event.repository.name }}
     steps:
       - name: Set REPO environment variable
@@ -130,7 +88,9 @@ jobs:
   release:
     runs-on: ubuntu-latest
     name: "Bump version and create changelog with commitizen"
-    needs: define_tag
+    needs: build_docker_image
+    env:
+      VERSION: ${{ github.ref_name }}
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -147,7 +107,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body_path: "CHANGELOG.md"
-          tag_name: ${{ env.REVISION }}
+          tag_name: ${{ env.VERSION }}
           draft: false
           prerelease: true
           generate_release_notes: true

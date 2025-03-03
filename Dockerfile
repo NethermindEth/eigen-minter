@@ -35,9 +35,5 @@ WORKDIR /app
 # Copy the Pre-built binary file from the previous stage
 COPY --from=builder /app/bin .
 
-# Copy the entrypoint script
-COPY scripts/docker-entrypoint.sh /app/docker-entrypoint.sh
-RUN chmod +x /app/docker-entrypoint.sh
-
 # Command to run the executable
-ENTRYPOINT ["./docker-entrypoint.sh"]
+ENTRYPOINT ["./eigen-minter"]
