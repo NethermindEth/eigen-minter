@@ -24,52 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestE2E_ValidArgs_Network_Holesky(t *testing.T) {
-	var cmd *exec.Cmd
-	var containerID string
-	var err error
-
-	e2eTest := newe2eTestCase(
-		t,
-		func(t *testing.T, binaryPath string) (map[string]string, error) {
-			containerID, err = startPushgatewayContainer(t, 9089)
-			if err != nil {
-				stopPushgatewayContainer(t, containerID)
-			}
-			return map[string]string{
-				"EIGEN_MINTER_LOG_LEVEL":   "debug",
-				"EIGEN_MINTER_PRIVATE_KEY": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-			}, err
-		},
-		func(t *testing.T, binaryPath string) *exec.Cmd {
-			cmd = runCommandCMD(t, binaryPath, "eigen-minter", "--network", "holesky", "--pushgateway-url", "http://localhost:9089")
-			time.Sleep(5 * time.Second)
-			return cmd
-		},
-		func(t *testing.T) {
-			defer stopPushgatewayContainer(t, containerID)
-			checkPushgatewayMetrics(t, expectedMetrics, 9089)
-
-			cmd.Process.Signal(os.Interrupt)
-
-			done := make(chan error, 1)
-			go func() {
-				done <- cmd.Wait()
-			}()
-
-			select {
-			case err := <-done:
-				assert.NoError(t, err)
-			case <-time.After(5 * time.Second):
-				t.Error("Process did not exit within the timeout period")
-				cmd.Process.Kill()
-			}
-		},
-	)
-
-	e2eTest.run()
-}
-
 func TestE2E_ValidArgs_Network_Mainnet(t *testing.T) {
 	var cmd *exec.Cmd
 	var containerID string
@@ -135,8 +89,8 @@ func TestE2E_ValidArgs_CustomRPC(t *testing.T) {
 			}, err
 		},
 		func(t *testing.T, binaryPath string) *exec.Cmd {
-			cmd = runCommandCMD(t, binaryPath, "eigen-minter", "--network", "holesky", "--rpc-endpoint", "https://1rpc.io/holesky")
-			time.Sleep(5 * time.Second)
+			cmd = runCommandCMD(t, binaryPath, "eigen-minter", "--network", "mainnet", "--rpc-endpoint", "https://eth.llamarpc.com")
+			time.Sleep(10 * time.Second)
 			return cmd
 		},
 		func(t *testing.T) {
@@ -178,9 +132,9 @@ func TestE2E_ValidEnv_All(t *testing.T) {
 
 			return map[string]string{
 				"EIGEN_MINTER_PUSHGATEWAY_URL":  "http://localhost:9093",
-				"EIGEN_MINTER_NETWORK":          "holesky",
-				"EIGEN_MINTER_RPC_ENDPOINT":     "https://ethereum-holesky-rpc.publicnode.com",
-				"EIGEN_MINTER_CONTRACT_ADDRESS": "0x8DaaE33cB2da8dA23595ADB19f271EF41E34bd8C",
+				"EIGEN_MINTER_NETWORK":          "mainnet",
+				"EIGEN_MINTER_RPC_ENDPOINT":     "https://eth.llamarpc.com",
+				"EIGEN_MINTER_CONTRACT_ADDRESS": "0x619F988b4EA2f896ED068d84cE6F52550d6acE84",
 				"EIGEN_MINTER_PRIVATE_KEY":      "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 				"EIGEN_MINTER_LOG_LEVEL":        "debug",
 			}, nil
@@ -255,7 +209,7 @@ func TestE2E_InvalidArgs_PrivateKey(t *testing.T) {
 		t,
 		nil,
 		func(t *testing.T, binaryPath string) *exec.Cmd {
-			cmd = runCommandCMD(t, binaryPath, "eigen-minter", "--network", "holesky", "--private-key", "invalid_key", "--log-level", "debug")
+			cmd = runCommandCMD(t, binaryPath, "eigen-minter", "--network", "mainnet", "--private-key", "invalid_key", "--log-level", "debug")
 			return cmd
 		},
 		func(t *testing.T) {

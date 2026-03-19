@@ -164,7 +164,6 @@ func pressButton(m *metrics.Metrics) error {
 }
 
 func callPressButton(cfg config.Config, chainID uint64, rpcClient *ethclient.Client, c *contract.Contract) error {
-
 	// Create a new transactor
 	pvKey, err := crypto.HexToECDSA(cfg.PrivateKey)
 	if err != nil {
