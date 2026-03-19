@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/NethermindEth/eigen-minter/internal/client"
 	"github.com/NethermindEth/eigen-minter/internal/config"
@@ -22,6 +23,9 @@ import (
 )
 
 var logLevel string
+
+// maxUint256 is equivalent to type(uint256).max in Solidity.
+var maxUint256 = new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(1))
 
 func RootCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -42,7 +46,7 @@ func RootCmd() *cobra.Command {
 	// Disable completion default cmd
 	cmd.CompletionOptions.DisableDefaultCmd = true
 
-	cmd.Flags().String("network", "holesky", "Ethereum network to use (mainnet or holesky)")
+	cmd.Flags().String("network", "mainnet", "Ethereum network to use (mainnet or holesky)")
 	cmd.Flags().String("rpc-endpoint", "", "RPC endpoint URL")
 	cmd.Flags().String("contract-address", "", "EmissionsController contract address")
 	cmd.Flags().String("pushgateway-url", "", "Prometheus Pushgateway URL")
@@ -145,7 +149,12 @@ func pressButton(m *metrics.Metrics) error {
 			}
 		}
 	} else {
-		slog.Info("Cannot press button at this time")
+		nextTime, err := c.NextTimeButtonPressable(nil)
+		if err == nil {
+			slog.Info(fmt.Sprintf("Cannot press button at this time, next pressable at: %s", time.Unix(nextTime.Int64(), 0).UTC()))
+		} else {
+			slog.Info("Cannot press button at this time")
+		}
 		if m != nil {
 			m.RecordPressButtonFailure()
 		}
@@ -155,8 +164,6 @@ func pressButton(m *metrics.Metrics) error {
 }
 
 func callPressButton(cfg config.Config, chainID uint64, rpcClient *ethclient.Client, c *contract.Contract) error {
-	// Pass type(uint256).max so the contract processes all distributions in one call
-	length, _ := new(big.Int).SetString("115792089237316195423570985008687907853269984665640564039457584007913129639935", 10)
 
 	// Create a new transactor
 	pvKey, err := crypto.HexToECDSA(cfg.PrivateKey)
@@ -184,7 +191,7 @@ func callPressButton(cfg config.Config, chainID uint64, rpcClient *ethclient.Cli
 	}
 
 	// Estimate gas limit
-	gasLimit, err := estimateGas(auth, rpcClient, common.HexToAddress(cfg.Contract), length)
+	gasLimit, err := estimateGas(auth, rpcClient, common.HexToAddress(cfg.Contract), maxUint256)
 	if err != nil {
 		slog.Error(fmt.Sprintf("failed to estimate gas: %v", err))
 		auth.GasLimit = 0
@@ -194,7 +201,7 @@ func callPressButton(cfg config.Config, chainID uint64, rpcClient *ethclient.Cli
 
 	slog.Info(fmt.Sprintf("Estimated gas: %d", auth.GasLimit))
 
-	tx, err := c.PressButton(auth, length)
+	tx, err := c.PressButton(auth, maxUint256)
 	if err != nil {
 		return fmt.Errorf("failed to press button: %v", err)
 	}

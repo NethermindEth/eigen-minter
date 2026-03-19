@@ -13,16 +13,13 @@ import (
 
 var chainIDs = map[string]uint64{
 	"mainnet": 1,
-	"holesky": 17000,
 }
 
 var networkRPCs = map[string]string{
 	"mainnet": "https://eth.llamarpc.com",
-	"holesky": "https://ethereum-holesky-rpc.publicnode.com",
 }
 
 var contractAddresses = map[string]string{
-	"holesky": "0x8DaaE33cB2da8dA23595ADB19f271EF41E34bd8C", // Old TokenHopper address.
 	"mainnet": "0x619F988b4EA2f896ED068d84cE6F52550d6acE84", // New EmissionsController address.
 }
 
@@ -54,7 +51,7 @@ func ValidateConfig() (Config, error) {
 	cfg := Config{}
 
 	cfg.Network = viper.GetString("network")
-	if _, ok := contractAddresses[cfg.Network]; !ok {
+	if _, ok := chainIDs[cfg.Network]; !ok {
 		return cfg, fmt.Errorf("network %s is not supported", cfg.Network)
 	}
 
@@ -66,8 +63,12 @@ func ValidateConfig() (Config, error) {
 
 	cfg.Contract = viper.GetString("contract-address")
 	if cfg.Contract == "" {
-		slog.Info(fmt.Sprintf("contract-address is not set, using default for %s: %s", cfg.Network, contractAddresses[cfg.Network]))
-		cfg.Contract = contractAddresses[cfg.Network]
+		defaultAddr, ok := contractAddresses[cfg.Network]
+		if !ok {
+			return cfg, fmt.Errorf("no default contract address for network %s, please specify --contract-address", cfg.Network)
+		}
+		slog.Info(fmt.Sprintf("contract-address is not set, using default for %s: %s", cfg.Network, defaultAddr))
+		cfg.Contract = defaultAddr
 	}
 
 	pvKeyPath := viper.GetString("private-key-file")
