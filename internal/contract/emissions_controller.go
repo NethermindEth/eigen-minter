@@ -765,7 +765,7 @@ func (_Contract *ContractCallerSession) Paused(index uint8) (bool, error) {
 // Solidity: function paused() view returns(uint256)
 func (_Contract *ContractCaller) Paused0(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _Contract.contract.Call(opts, &out, "paused")
+	err := _Contract.contract.Call(opts, &out, "paused0")
 
 	if err != nil {
 		return *new(*big.Int), err

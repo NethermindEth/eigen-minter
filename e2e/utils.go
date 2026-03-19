@@ -71,6 +71,13 @@ func startPushgatewayContainer(t *testing.T, port int) (string, error) {
 		return "", fmt.Errorf("failed to start pushgateway container: %v", err)
 	}
 	containerID := strings.TrimSpace(string(out))
+
+	// Wait for pushgateway to be ready before returning
+	if _, err := getRequest(t, fmt.Sprintf("http://localhost:%d/metrics", port), 30*time.Second); err != nil {
+		stopPushgatewayContainer(t, containerID)
+		return "", fmt.Errorf("pushgateway container did not become ready on port %d: %v", port, err)
+	}
+
 	return containerID, nil
 }
 

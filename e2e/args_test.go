@@ -89,7 +89,7 @@ func TestE2E_ValidArgs_CustomRPC(t *testing.T) {
 			}, err
 		},
 		func(t *testing.T, binaryPath string) *exec.Cmd {
-			cmd = runCommandCMD(t, binaryPath, "eigen-minter", "--network", "mainnet", "--rpc-endpoint", "https://eth.llamarpc.com")
+			cmd = runCommandCMD(t, binaryPath, "eigen-minter", "--network", "mainnet", "--rpc-endpoint", "https://ethereum-rpc.publicnode.com")
 			time.Sleep(10 * time.Second)
 			return cmd
 		},
@@ -133,7 +133,7 @@ func TestE2E_ValidEnv_All(t *testing.T) {
 			return map[string]string{
 				"EIGEN_MINTER_PUSHGATEWAY_URL":  "http://localhost:9093",
 				"EIGEN_MINTER_NETWORK":          "mainnet",
-				"EIGEN_MINTER_RPC_ENDPOINT":     "https://eth.llamarpc.com",
+				"EIGEN_MINTER_RPC_ENDPOINT":     "https://ethereum-rpc.publicnode.com",
 				"EIGEN_MINTER_CONTRACT_ADDRESS": "0x619F988b4EA2f896ED068d84cE6F52550d6acE84",
 				"EIGEN_MINTER_PRIVATE_KEY":      "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 				"EIGEN_MINTER_LOG_LEVEL":        "debug",

@@ -16,7 +16,7 @@ var chainIDs = map[string]uint64{
 }
 
 var networkRPCs = map[string]string{
-	"mainnet": "https://eth.llamarpc.com",
+	"mainnet": "https://ethereum-rpc.publicnode.com",
 }
 
 var contractAddresses = map[string]string{
