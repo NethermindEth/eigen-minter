@@ -22,8 +22,8 @@ var networkRPCs = map[string]string{
 }
 
 var contractAddresses = map[string]string{
-	"holesky": "0x8DaaE33cB2da8dA23595ADB19f271EF41E34bd8C",
-	"mainnet": "0x0ffC6AC10515EE0F83fEE71FCaf5Ea5805256563",
+	"holesky": "0x8DaaE33cB2da8dA23595ADB19f271EF41E34bd8C", // Old TokenHopper address.
+	"mainnet": "0x619F988b4EA2f896ED068d84cE6F52550d6acE84", // New EmissionsController address.
 }
 
 func ChainID(network string) (uint64, error) {
