@@ -46,7 +46,7 @@ func RootCmd() *cobra.Command {
 	// Disable completion default cmd
 	cmd.CompletionOptions.DisableDefaultCmd = true
 
-	cmd.Flags().String("network", "mainnet", "Ethereum network to use (mainnet or holesky)")
+	cmd.Flags().String("network", "mainnet", "Ethereum network to use")
 	cmd.Flags().String("rpc-endpoint", "", "RPC endpoint URL")
 	cmd.Flags().String("contract-address", "", "EmissionsController contract address")
 	cmd.Flags().String("pushgateway-url", "", "Prometheus Pushgateway URL")
