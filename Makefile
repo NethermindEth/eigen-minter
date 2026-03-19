@@ -1,7 +1,7 @@
 include .env
 
 generate:
-	@abigen --abi ./internal/contract/EmissionsController.abi --pkg contract --type EmissionsController --out ./internal/contract/emissions_controller.go
+	@abigen --abi ./internal/contract/EmissionsController.abi --pkg contract --out ./internal/contract/emissions_controller.go
 	@go generate ./...
 
 build: generate ## Compile the binary
