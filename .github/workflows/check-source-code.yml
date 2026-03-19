@@ -35,6 +35,7 @@ jobs:
 
       - name: Check the branch commits
         run: |
+          git remote set-head origin -a
           cz check --rev-range origin/HEAD..HEAD
 
   code-format:

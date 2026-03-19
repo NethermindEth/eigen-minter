@@ -150,8 +150,10 @@ func pressButton(m *metrics.Metrics) error {
 		}
 	} else {
 		nextTime, err := c.NextTimeButtonPressable(nil)
-		if err == nil {
+		if err == nil && nextTime.IsInt64() {
 			slog.Info(fmt.Sprintf("Cannot press button at this time, next pressable at: %s", time.Unix(nextTime.Int64(), 0).UTC()))
+		} else if err == nil {
+			slog.Info(fmt.Sprintf("Cannot press button at this time, next pressable at raw value: %s", nextTime.String()))
 		} else {
 			slog.Info("Cannot press button at this time")
 		}
