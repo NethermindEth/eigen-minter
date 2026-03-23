@@ -35,13 +35,14 @@ jobs:
 
       - name: Check the branch commits
         run: |
+          git remote set-head origin -a
           cz check --rev-range origin/HEAD..HEAD
 
   code-format:
     name: Code format
     strategy:
       matrix:
-        go: ["1.23"]
+        go: ["1.24"]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
 
@@ -87,7 +88,7 @@ jobs:
     needs: code-format
     strategy:
       matrix:
-        go: ["1.23"]
+        go: ["1.24"]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
 
@@ -130,7 +131,7 @@ jobs:
     needs: build
     strategy:
       matrix:
-        go: ["1.23"]
+        go: ["1.24"]
         os: [ubuntu-latest]
         codecov: [false]
     runs-on: ${{ matrix.os }}

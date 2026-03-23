@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"math/big"
 	"strings"
+	"time"
 
 	"github.com/NethermindEth/eigen-minter/internal/client"
 	"github.com/NethermindEth/eigen-minter/internal/config"
@@ -23,11 +24,14 @@ import (
 
 var logLevel string
 
+// maxUint256 is equivalent to type(uint256).max in Solidity.
+var maxUint256 = new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(1))
+
 func RootCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "eigen-minter",
-		Short: "Eigen Minter is a CLI application for interacting with the TokenHopper smart contract",
-		Long:  "A cronjob to call Eigenlayer Token Hopper contracts functions periodically to mint EIGEN tokens for programmatic incentives.",
+		Short: "Eigen Minter is a CLI application for interacting with the EmissionsController smart contract",
+		Long:  "A cronjob to call the Eigenlayer EmissionsController contract's pressButton function periodically to mint EIGEN tokens for programmatic incentives.",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			logLevel = viper.GetString("log-level")
 			level := slog.Level(slog.LevelInfo)
@@ -42,9 +46,9 @@ func RootCmd() *cobra.Command {
 	// Disable completion default cmd
 	cmd.CompletionOptions.DisableDefaultCmd = true
 
-	cmd.Flags().String("network", "holesky", "Ethereum network to use (mainnet or holesky)")
+	cmd.Flags().String("network", "mainnet", "Ethereum network to use")
 	cmd.Flags().String("rpc-endpoint", "", "RPC endpoint URL")
-	cmd.Flags().String("contract-address", "", "TokenHopper contract address")
+	cmd.Flags().String("contract-address", "", "EmissionsController contract address")
 	cmd.Flags().String("pushgateway-url", "", "Prometheus Pushgateway URL")
 	cmd.Flags().String("private-key", "", "Private key to use for transactions")
 	cmd.Flags().String("from-address", "", "From address to use for transactions")
@@ -125,10 +129,10 @@ func pressButton(m *metrics.Metrics) error {
 		return fmt.Errorf("failed to create contract: %v", err)
 	}
 
-	slog.Info("Checking if can press")
-	canPress, err := c.CanPress(nil)
+	slog.Info("Checking if button is pressable")
+	canPress, err := c.IsButtonPressable(nil)
 	if err != nil {
-		return fmt.Errorf("failed to check if can press: %v", err)
+		return fmt.Errorf("failed to check if button is pressable: %v", err)
 	}
 
 	if canPress {
@@ -145,7 +149,14 @@ func pressButton(m *metrics.Metrics) error {
 			}
 		}
 	} else {
-		slog.Info("Cannot press button at this time")
+		nextTime, err := c.NextTimeButtonPressable(nil)
+		if err == nil && nextTime.IsInt64() {
+			slog.Info(fmt.Sprintf("Cannot press button at this time, next pressable at: %s", time.Unix(nextTime.Int64(), 0).UTC()))
+		} else if err == nil {
+			slog.Info(fmt.Sprintf("Cannot press button at this time, next pressable at raw value: %s", nextTime.String()))
+		} else {
+			slog.Info("Cannot press button at this time")
+		}
 		if m != nil {
 			m.RecordPressButtonFailure()
 		}
@@ -181,7 +192,7 @@ func callPressButton(cfg config.Config, chainID uint64, rpcClient *ethclient.Cli
 	}
 
 	// Estimate gas limit
-	gasLimit, err := estimateGas(auth, rpcClient, common.HexToAddress(cfg.Contract))
+	gasLimit, err := estimateGas(auth, rpcClient, common.HexToAddress(cfg.Contract), maxUint256)
 	if err != nil {
 		slog.Error(fmt.Sprintf("failed to estimate gas: %v", err))
 		auth.GasLimit = 0
@@ -191,7 +202,7 @@ func callPressButton(cfg config.Config, chainID uint64, rpcClient *ethclient.Cli
 
 	slog.Info(fmt.Sprintf("Estimated gas: %d", auth.GasLimit))
 
-	tx, err := c.PressButton(auth)
+	tx, err := c.PressButton(auth, maxUint256)
 	if err != nil {
 		return fmt.Errorf("failed to press button: %v", err)
 	}
@@ -208,7 +219,7 @@ func callPressButton(cfg config.Config, chainID uint64, rpcClient *ethclient.Cli
 	return nil
 }
 
-func estimateGas(auth *bind.TransactOpts, rpcClient *ethclient.Client, contractAddress common.Address) (uint64, error) {
+func estimateGas(auth *bind.TransactOpts, rpcClient *ethclient.Client, contractAddress common.Address, length *big.Int) (uint64, error) {
 	// Parse contract ABI
 	contractABI, err := abi.JSON(strings.NewReader(contract.ContractMetaData.ABI))
 	if err != nil {
@@ -216,7 +227,7 @@ func estimateGas(auth *bind.TransactOpts, rpcClient *ethclient.Client, contractA
 	}
 
 	// Create a new transaction object
-	data, err := contractABI.Pack("pressButton")
+	data, err := contractABI.Pack("pressButton", length)
 	if err != nil {
 		return 0, fmt.Errorf("failed to pack data: %v", err)
 	}
