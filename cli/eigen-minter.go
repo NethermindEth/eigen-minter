@@ -200,7 +200,7 @@ func callPressButton(cfg config.Config, chainID uint64, rpcClient *ethclient.Cli
 	// Add a buffer to the estimated gas limit
 	auth.GasLimit = uint64(float64(gasLimit) * 1.5) // 50% buffer
 
-	slog.Info(fmt.Sprintf("Estimated gas: %d", auth.GasLimit))
+	slog.Info(fmt.Sprintf("Gas price: %s wei, Estimated gas limit: %d", auth.GasPrice.String(), auth.GasLimit))
 
 	tx, err := c.PressButton(auth, maxUint256)
 	if err != nil {
@@ -209,10 +209,12 @@ func callPressButton(cfg config.Config, chainID uint64, rpcClient *ethclient.Cli
 
 	slog.Info(fmt.Sprintf("Transaction sent: %s", tx.Hash().Hex()))
 
-	// Wait for the transaction to be mined
-	receipt, err := bind.WaitMined(context.Background(), rpcClient, tx)
+	// Wait for the transaction to be mined (5 minute timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	receipt, err := bind.WaitMined(ctx, rpcClient, tx)
 	if err != nil {
-		slog.Error(fmt.Sprintf("failed to wait for transaction to be mined: %v", err))
+		return fmt.Errorf("failed to wait for transaction to be mined: %v", err)
 	}
 
 	slog.Info(fmt.Sprintf("Transaction mined in block %d", receipt.BlockNumber.Uint64()))
