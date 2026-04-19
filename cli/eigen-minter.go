@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -23,6 +24,16 @@ import (
 )
 
 var logLevel string
+
+const defaultTransactionMiningTimeout = 5 * time.Minute
+
+func getTransactionMiningTimeout() time.Duration {
+	timeout := viper.GetDuration("transaction-mining-timeout")
+	if timeout <= 0 {
+		return defaultTransactionMiningTimeout
+	}
+	return timeout
+}
 
 // maxUint256 is equivalent to type(uint256).max in Solidity.
 var maxUint256 = new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(1))
@@ -54,6 +65,7 @@ func RootCmd() *cobra.Command {
 	cmd.Flags().String("from-address", "", "From address to use for transactions")
 	cmd.Flags().String("private-key-file", "", "File containing the private key to use for transactions. If a private key is found in the file, it will be used instead of the private-key flag")
 	cmd.Flags().String("log-level", "info", "Log level (debug, info, warn, error)")
+	cmd.Flags().Duration("transaction-mining-timeout", defaultTransactionMiningTimeout, "Timeout for waiting for a transaction to be mined")
 
 	viper.BindPFlag("network", cmd.Flags().Lookup("network"))
 	viper.BindPFlag("rpc-endpoint", cmd.Flags().Lookup("rpc-endpoint"))
@@ -63,6 +75,7 @@ func RootCmd() *cobra.Command {
 	viper.BindPFlag("from-address", cmd.Flags().Lookup("from-address"))
 	viper.BindPFlag("private-key-file", cmd.Flags().Lookup("private-key-file"))
 	viper.BindPFlag("log-level", cmd.Flags().Lookup("log-level"))
+	viper.BindPFlag("transaction-mining-timeout", cmd.Flags().Lookup("transaction-mining-timeout"))
 
 	viper.BindEnv("network", "EIGEN_MINTER_NETWORK")
 	viper.BindEnv("rpc-endpoint", "EIGEN_MINTER_RPC_ENDPOINT")
@@ -71,6 +84,7 @@ func RootCmd() *cobra.Command {
 	viper.BindEnv("private-key", "EIGEN_MINTER_PRIVATE_KEY")
 	viper.BindEnv("from-address", "EIGEN_MINTER_FROM_ADDRESS")
 	viper.BindEnv("private-key-file", "EIGEN_MINTER_PRIVATE_KEY_FILE")
+	viper.BindEnv("transaction-mining-timeout", "EIGEN_MINTER_TRANSACTION_MINING_TIMEOUT")
 
 	viper.SetEnvPrefix("EIGEN_MINTER")
 	viper.AutomaticEnv()
@@ -194,13 +208,14 @@ func callPressButton(cfg config.Config, chainID uint64, rpcClient *ethclient.Cli
 	// Estimate gas limit
 	gasLimit, err := estimateGas(auth, rpcClient, common.HexToAddress(cfg.Contract), maxUint256)
 	if err != nil {
-		slog.Error(fmt.Sprintf("failed to estimate gas: %v", err))
+		slog.Error(fmt.Sprintf("failed to estimate gas: %v; using gas limit 0 to let bind estimate it", err))
 		auth.GasLimit = 0
+		slog.Info(fmt.Sprintf("Gas price: %s wei, Gas limit: 0 (bind will estimate)", auth.GasPrice.String()))
+	} else {
+		// Add a buffer to the estimated gas limit
+		auth.GasLimit = uint64(float64(gasLimit) * 1.5) // 50% buffer
+		slog.Info(fmt.Sprintf("Gas price: %s wei, Gas limit (with 50%% buffer): %d", auth.GasPrice.String(), auth.GasLimit))
 	}
-	// Add a buffer to the estimated gas limit
-	auth.GasLimit = uint64(float64(gasLimit) * 1.5) // 50% buffer
-
-	slog.Info(fmt.Sprintf("Estimated gas: %d", auth.GasLimit))
 
 	tx, err := c.PressButton(auth, maxUint256)
 	if err != nil {
@@ -209,10 +224,16 @@ func callPressButton(cfg config.Config, chainID uint64, rpcClient *ethclient.Cli
 
 	slog.Info(fmt.Sprintf("Transaction sent: %s", tx.Hash().Hex()))
 
-	// Wait for the transaction to be mined
-	receipt, err := bind.WaitMined(context.Background(), rpcClient, tx)
+	// Wait for the transaction to be mined using the configured timeout, or the default.
+	timeout := getTransactionMiningTimeout()
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	receipt, err := bind.WaitMined(ctx, rpcClient, tx)
 	if err != nil {
-		slog.Error(fmt.Sprintf("failed to wait for transaction to be mined: %v", err))
+		if errors.Is(err, context.DeadlineExceeded) {
+			return fmt.Errorf("timed out waiting for tx %s to be mined after %s", tx.Hash().Hex(), timeout)
+		}
+		return fmt.Errorf("failed to wait for tx %s to be mined after %s: %v", tx.Hash().Hex(), timeout, err)
 	}
 
 	slog.Info(fmt.Sprintf("Transaction mined in block %d", receipt.BlockNumber.Uint64()))
